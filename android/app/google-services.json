@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "232566600549",
+    "project_id": "agriculture-inventory-manage",
+    "storage_bucket": "agriculture-inventory-manage.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:232566600549:android:ca9154572679ea774d278c",
+        "android_client_info": {
+          "package_name": "com.example.agriculture_inventory_managment"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAETGisbaKO1mbmWxG1VwUdGq1NjvG6Qik"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
