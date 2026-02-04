@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 import '../../../domain/entities/product.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_theme.dart';
-
 import '../bloc/product/product_bloc.dart';
 import '../bloc/product/product_event.dart';
 import '../bloc/product/product_state.dart';
@@ -48,15 +47,11 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       final product = widget.product!;
       _nameController = TextEditingController(text: product.name);
       _descriptionController = TextEditingController(text: product.description);
-      _manufacturerController =
-          TextEditingController(text: product.manufacturer);
+      _manufacturerController = TextEditingController(text: product.manufacturer);
       _priceController = TextEditingController(text: product.price.toString());
-      _currentStockController =
-          TextEditingController(text: product.currentStock.toString());
-      _minimumStockController =
-          TextEditingController(text: product.minimumStock.toString());
-      _batchNumberController =
-          TextEditingController(text: product.batchNumber ?? '');
+      _currentStockController = TextEditingController(text: product.currentStock.toString());
+      _minimumStockController = TextEditingController(text: product.minimumStock.toString());
+      _batchNumberController = TextEditingController(text: product.batchNumber ?? '');
       _selectedCategory = product.category;
       _selectedUnit = product.unit;
       _expiryDate = product.expiryDate;
@@ -108,9 +103,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       );
 
       if (isEditMode) {
-        context
-            .read<ProductBloc>()
-            .add(UpdateProduct(id: product.id, product: product));
+        context.read<ProductBloc>().add(UpdateProduct(id: product.id, product: product));
       } else {
         context.read<ProductBloc>().add(AddProduct(product));
       }
@@ -151,15 +144,15 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: AppTheme.secondaryGreen,
+                backgroundColor: AppTheme.secondaryBlue,
               ),
             );
-            Navigator.pop(context);
+            Navigator.pop(context, true); // Return true to indicate success
           } else if (state is ProductError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: AppTheme.warningRed,
+                backgroundColor: AppTheme.warningOrange,
               ),
             );
           }
@@ -173,11 +166,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  // Product Name
                   TextFormField(
                     controller: _nameController,
                     decoration: const InputDecoration(
                       labelText: 'Product Name *',
                       hintText: 'Enter product name',
+                      prefixIcon: Icon(Icons.inventory_2),
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -191,10 +186,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     enabled: !isLoading,
                   ),
                   const SizedBox(height: 16),
+
+                  // Category
                   DropdownButtonFormField<String>(
                     value: _selectedCategory,
                     decoration: const InputDecoration(
                       labelText: 'Category *',
+                      prefixIcon: Icon(Icons.category),
                     ),
                     items: AppConstants.productCategories.map((category) {
                       return DropdownMenuItem(
@@ -211,11 +209,14 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
+
+                  // Description
                   TextFormField(
                     controller: _descriptionController,
                     decoration: const InputDecoration(
                       labelText: 'Description *',
                       hintText: 'Enter product description',
+                      prefixIcon: Icon(Icons.description),
                     ),
                     maxLines: 3,
                     validator: (value) {
@@ -227,11 +228,14 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     enabled: !isLoading,
                   ),
                   const SizedBox(height: 16),
+
+                  // Manufacturer
                   TextFormField(
                     controller: _manufacturerController,
                     decoration: const InputDecoration(
                       labelText: 'Manufacturer *',
                       hintText: 'Enter manufacturer name',
+                      prefixIcon: Icon(Icons.business),
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -242,6 +246,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     enabled: !isLoading,
                   ),
                   const SizedBox(height: 16),
+
+                  // Price and Unit
                   Row(
                     children: [
                       Expanded(
@@ -252,9 +258,9 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                             labelText: 'Price *',
                             hintText: '0.00',
                             prefixText: '₹ ',
+                            prefixIcon: Icon(Icons.currency_rupee),
                           ),
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Required';
@@ -293,6 +299,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
+
+                  // Current Stock and Minimum Stock
                   Row(
                     children: [
                       Expanded(
@@ -300,6 +308,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                           controller: _currentStockController,
                           decoration: const InputDecoration(
                             labelText: 'Current Stock *',
+                            prefixIcon: Icon(Icons.inventory),
                           ),
                           keyboardType: TextInputType.number,
                           validator: (value) {
@@ -321,6 +330,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                           controller: _minimumStockController,
                           decoration: const InputDecoration(
                             labelText: 'Min Stock *',
+                            prefixIcon: Icon(Icons.warning_amber),
                           ),
                           keyboardType: TextInputType.number,
                           validator: (value) {
@@ -339,64 +349,92 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
+
+                  // Batch Number
                   TextFormField(
                     controller: _batchNumberController,
                     decoration: const InputDecoration(
                       labelText: 'Batch Number (Optional)',
                       hintText: 'Enter batch number',
+                      prefixIcon: Icon(Icons.numbers),
                     ),
                     enabled: !isLoading,
                   ),
                   const SizedBox(height: 16),
-                  ListTile(
-                    title: const Text('Manufacture Date (Optional)'),
-                    subtitle: Text(
-                      _manufactureDate != null
-                          ? '${_manufactureDate!.day}/${_manufactureDate!.month}/${_manufactureDate!.year}'
-                          : 'Not set',
-                    ),
-                    trailing: const Icon(Icons.calendar_today),
-                    onTap: isLoading
-                        ? null
-                        : () => _selectDate(context, false),
-                    tileColor: Colors.grey[100],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+
+                  // Manufacture Date
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.calendar_today, color: AppTheme.primaryBlue),
+                      title: const Text('Manufacture Date (Optional)'),
+                      subtitle: Text(
+                        _manufactureDate != null
+                            ? '${_manufactureDate!.day}/${_manufactureDate!.month}/${_manufactureDate!.year}'
+                            : 'Not set',
+                      ),
+                      trailing: _manufactureDate != null
+                          ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: isLoading
+                            ? null
+                            : () {
+                          setState(() {
+                            _manufactureDate = null;
+                          });
+                        },
+                      )
+                          : const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: isLoading ? null : () => _selectDate(context, false),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ListTile(
-                    title: const Text('Expiry Date *'),
-                    subtitle: Text(
-                      '${_expiryDate.day}/${_expiryDate.month}/${_expiryDate.year}',
-                    ),
-                    trailing: const Icon(Icons.calendar_today),
-                    onTap: isLoading
-                        ? null
-                        : () => _selectDate(context, true),
-                    tileColor: Colors.grey[100],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+
+                  // Expiry Date
+                  Card(
+                    color: AppTheme.accentCyan.withOpacity(0.1),
+                    child: ListTile(
+                      leading: const Icon(Icons.event_busy, color: AppTheme.accentLightBlue),
+                      title: const Text('Expiry Date *'),
+                      subtitle: Text(
+                        '${_expiryDate.day}/${_expiryDate.month}/${_expiryDate.year}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: isLoading ? null : () => _selectDate(context, true),
                     ),
                   ),
                   const SizedBox(height: 32),
-                  ElevatedButton(
+
+                  // Save Button
+                  ElevatedButton.icon(
                     onPressed: isLoading ? null : _saveProduct,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: isLoading
+                    icon: isLoading
                         ? const SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                        : Text(isEditMode ? 'Update Product' : 'Add Product'),
+                        : Icon(isEditMode ? Icons.update : Icons.add),
+                    label: Text(isEditMode ? 'Update Product' : 'Add Product'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      textStyle: const TextStyle(fontSize: 18),
+                    ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // Cancel Button
+                  if (isLoading)
+                    OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
                 ],
               ),
             );

@@ -21,7 +21,7 @@ class ProductRepositoryImpl implements ProductRepository {
       final model = ProductModel.fromEntity(product);
       return await _firebaseService.addProduct(model);
     } catch (e) {
-      throw Exception('Failed to add product: $e');
+      throw Exception('Failed to Add Product: $e');
     }
   }
 

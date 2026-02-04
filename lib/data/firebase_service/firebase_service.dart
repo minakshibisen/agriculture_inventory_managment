@@ -24,7 +24,7 @@ class FirebaseService {
       final docRef = await _productsCollection.add(product.toFirestore());
       return docRef.id;
     } catch (e) {
-      throw Exception('Failed to add product: $e');
+      throw Exception('Failed to Add Product: $e');
     }
   }
 
@@ -62,38 +62,49 @@ class FirebaseService {
     }
   }
 
-  /// Get all active products
+  /// Get all active products - SIMPLIFIED (No compound index needed)
   Stream<List<ProductModel>> getAllProducts() {
     try {
+      // Simple query without compound index
       return _productsCollection
           .where('isActive', isEqualTo: true)
-          .orderBy('name')
           .snapshots()
-          .map((snapshot) => snapshot.docs
-          .map((doc) => ProductModel.fromFirestore(doc))
-          .toList());
+          .map((snapshot) {
+        final products = snapshot.docs
+            .map((doc) => ProductModel.fromFirestore(doc))
+            .toList();
+
+        // Sort in memory instead of using orderBy (which requires index)
+        products.sort((a, b) => a.name.compareTo(b.name));
+        return products;
+      });
     } catch (e) {
       throw Exception('Failed to get products: $e');
     }
   }
 
-  /// Get products by category
+  /// Get products by category - SIMPLIFIED
   Stream<List<ProductModel>> getProductsByCategory(String category) {
     try {
       return _productsCollection
           .where('isActive', isEqualTo: true)
           .where('category', isEqualTo: category)
-          .orderBy('name')
           .snapshots()
-          .map((snapshot) => snapshot.docs
-          .map((doc) => ProductModel.fromFirestore(doc))
-          .toList());
+          .map((snapshot) {
+        final products = snapshot.docs
+            .map((doc) => ProductModel.fromFirestore(doc))
+            .toList();
+
+        // Sort in memory
+        products.sort((a, b) => a.name.compareTo(b.name));
+        return products;
+      });
     } catch (e) {
       throw Exception('Failed to get products by category: $e');
     }
   }
 
-  /// Get low stock products
+  /// Get low stock products - SIMPLIFIED
   Stream<List<ProductModel>> getLowStockProducts() {
     try {
       return _productsCollection
@@ -102,65 +113,99 @@ class FirebaseService {
           .map((snapshot) {
         final products = snapshot.docs
             .map((doc) => ProductModel.fromFirestore(doc))
-            .toList();
-        return products
             .where((p) => p.currentStock <= p.minimumStock)
             .toList();
+
+        // Sort by stock level
+        products.sort((a, b) => a.currentStock.compareTo(b.currentStock));
+        return products;
       });
     } catch (e) {
       throw Exception('Failed to get low stock products: $e');
     }
   }
 
-  /// Get expiring products (within specified days)
+  /// Get expiring products (within specified days) - SIMPLIFIED
   Stream<List<ProductModel>> getExpiringProducts({int daysThreshold = 30}) {
     try {
-      final thresholdDate = DateTime.now().add(Duration(days: daysThreshold));
-      return _productsCollection
-          .where('isActive', isEqualTo: true)
-          .where('expiryDate',
-          isLessThanOrEqualTo: Timestamp.fromDate(thresholdDate))
-          .orderBy('expiryDate')
-          .snapshots()
-          .map((snapshot) => snapshot.docs
-          .map((doc) => ProductModel.fromFirestore(doc))
-          .toList());
-    } catch (e) {
-      throw Exception('Failed to get expiring products: $e');
-    }
-  }
-
-  /// Get expired products
-  Stream<List<ProductModel>> getExpiredProducts() {
-    try {
       final now = DateTime.now();
-      return _productsCollection
-          .where('isActive', isEqualTo: true)
-          .where('expiryDate', isLessThan: Timestamp.fromDate(now))
-          .orderBy('expiryDate')
-          .snapshots()
-          .map((snapshot) => snapshot.docs
-          .map((doc) => ProductModel.fromFirestore(doc))
-          .toList());
-    } catch (e) {
-      throw Exception('Failed to get expired products: $e');
-    }
-  }
+      final thresholdDate = now.add(Duration(days: daysThreshold));
 
-  /// Search products by name
-  Stream<List<ProductModel>> searchProducts(String query) {
-    try {
-      final lowercaseQuery = query.toLowerCase();
       return _productsCollection
           .where('isActive', isEqualTo: true)
           .snapshots()
           .map((snapshot) {
         final products = snapshot.docs
             .map((doc) => ProductModel.fromFirestore(doc))
+            .where((p) =>
+        p.expiryDate.isAfter(now) &&
+            p.expiryDate.isBefore(thresholdDate))
             .toList();
-        return products
+
+        // Sort by expiry date
+        products.sort((a, b) => a.expiryDate.compareTo(b.expiryDate));
+        return products;
+      });
+    } catch (e) {
+      throw Exception('Failed to get expiring products: $e');
+    }
+  }
+
+  /// Get expired products - SIMPLIFIED
+  Stream<List<ProductModel>> getExpiredProducts() {
+    try {
+      final now = DateTime.now();
+
+      return _productsCollection
+          .where('isActive', isEqualTo: true)
+          .snapshots()
+          .map((snapshot) {
+        final products = snapshot.docs
+            .map((doc) => ProductModel.fromFirestore(doc))
+            .where((p) => p.expiryDate.isBefore(now))
+            .toList();
+
+        // Sort by expiry date (most recently expired first)
+        products.sort((a, b) => b.expiryDate.compareTo(a.expiryDate));
+        return products;
+      });
+    } catch (e) {
+      throw Exception('Failed to get expired products: $e');
+    }
+  }
+
+  /// Search products by name - SIMPLIFIED
+  Stream<List<ProductModel>> searchProducts(String query) {
+    try {
+      final lowercaseQuery = query.toLowerCase();
+
+      return _productsCollection
+          .where('isActive', isEqualTo: true)
+          .snapshots()
+          .map((snapshot) {
+        final products = snapshot.docs
+            .map((doc) => ProductModel.fromFirestore(doc))
             .where((p) => p.name.toLowerCase().contains(lowercaseQuery))
             .toList();
+
+        // Sort by relevance (exact matches first, then contains)
+        products.sort((a, b) {
+          final aName = a.name.toLowerCase();
+          final bName = b.name.toLowerCase();
+
+          // Exact match priority
+          if (aName == lowercaseQuery && bName != lowercaseQuery) return -1;
+          if (bName == lowercaseQuery && aName != lowercaseQuery) return 1;
+
+          // Starts with priority
+          if (aName.startsWith(lowercaseQuery) && !bName.startsWith(lowercaseQuery)) return -1;
+          if (bName.startsWith(lowercaseQuery) && !aName.startsWith(lowercaseQuery)) return 1;
+
+          // Alphabetical
+          return aName.compareTo(bName);
+        });
+
+        return products;
       });
     } catch (e) {
       throw Exception('Failed to search products: $e');
@@ -186,11 +231,16 @@ class FirebaseService {
     try {
       return _transactionsCollection
           .where('productId', isEqualTo: productId)
-          .orderBy('transactionDate', descending: true)
           .snapshots()
-          .map((snapshot) => snapshot.docs
-          .map((doc) => StockTransactionModel.fromFirestore(doc))
-          .toList());
+          .map((snapshot) {
+        final transactions = snapshot.docs
+            .map((doc) => StockTransactionModel.fromFirestore(doc))
+            .toList();
+
+        // Sort in memory by transaction date (descending)
+        transactions.sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
+        return transactions;
+      });
     } catch (e) {
       throw Exception('Failed to get product transactions: $e');
     }
@@ -200,26 +250,36 @@ class FirebaseService {
   Stream<List<StockTransactionModel>> getAllTransactions(
       {int? limit, DateTime? startDate, DateTime? endDate}) {
     try {
-      Query query = _transactionsCollection.orderBy('transactionDate',
-          descending: true);
+      return _transactionsCollection
+          .snapshots()
+          .map((snapshot) {
+        var transactions = snapshot.docs
+            .map((doc) => StockTransactionModel.fromFirestore(doc))
+            .toList();
 
-      if (startDate != null) {
-        query = query.where('transactionDate',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
-      }
+        // Filter by date range in memory
+        if (startDate != null) {
+          transactions = transactions
+              .where((t) => t.transactionDate.isAfter(startDate))
+              .toList();
+        }
 
-      if (endDate != null) {
-        query = query.where('transactionDate',
-            isLessThanOrEqualTo: Timestamp.fromDate(endDate));
-      }
+        if (endDate != null) {
+          transactions = transactions
+              .where((t) => t.transactionDate.isBefore(endDate))
+              .toList();
+        }
 
-      if (limit != null) {
-        query = query.limit(limit);
-      }
+        // Sort by transaction date (descending)
+        transactions.sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
 
-      return query.snapshots().map((snapshot) => snapshot.docs
-          .map((doc) => StockTransactionModel.fromFirestore(doc))
-          .toList());
+        // Apply limit in memory
+        if (limit != null && transactions.length > limit) {
+          transactions = transactions.sublist(0, limit);
+        }
+
+        return transactions;
+      });
     } catch (e) {
       throw Exception('Failed to get transactions: $e');
     }

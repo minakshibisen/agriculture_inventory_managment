@@ -7,6 +7,8 @@ import '../../core/utilities/date_formatter.dart';
 import '../bloc/product/product_bloc.dart';
 import '../bloc/product/product_event.dart';
 import '../bloc/product/product_state.dart';
+import 'add_edit_product_screen.dart';
+import 'product_detail_screen.dart';
 
 class ProductsListScreen extends StatefulWidget {
   const ProductsListScreen({super.key});
@@ -46,6 +48,34 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
     }
   }
 
+  void _navigateToAddProduct() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddEditProductScreen(),
+      ),
+    );
+
+    // Reload products if product was added
+    if (result == true) {
+      context.read<ProductBloc>().add(const LoadProducts());
+    }
+  }
+
+  void _navigateToProductDetails(Product product) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetailScreen(product: product),
+      ),
+    );
+
+    // Reload products if product was updated/deleted
+    if (result == true) {
+      context.read<ProductBloc>().add(const LoadProducts());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,6 +92,7 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
       ),
       body: Column(
         children: [
+          // Search Bar
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
@@ -86,6 +117,8 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
               },
             ),
           ),
+
+          // Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -118,6 +151,8 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
             ),
           ),
           const SizedBox(height: 16),
+
+          // Products List
           Expanded(
             child: BlocBuilder<ProductBloc, ProductState>(
               builder: (context, state) {
@@ -139,6 +174,12 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
                             'No products found',
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tap the + button to add your first product',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
                         ],
                       ),
                     );
@@ -151,7 +192,10 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: state.products.length,
                       itemBuilder: (context, index) {
-                        return ProductCard(product: state.products[index]);
+                        return ProductCard(
+                          product: state.products[index],
+                          onTap: () => _navigateToProductDetails(state.products[index]),
+                        );
                       },
                     ),
                   );
@@ -187,9 +231,7 @@ class _ProductsListScreenState extends State<ProductsListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Navigate to add product screen
-        },
+        onPressed: _navigateToAddProduct,
         icon: const Icon(Icons.add),
         label: const Text('Add Product'),
       ),
@@ -272,7 +314,7 @@ class _FilterChip extends StatelessWidget {
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => onSelected(),
-      selectedColor: AppTheme.primaryGreen,
+      selectedColor: AppTheme.primaryBlue,
       checkmarkColor: Colors.white,
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : AppTheme.textPrimary,
@@ -283,17 +325,20 @@ class _FilterChip extends StatelessWidget {
 
 class ProductCard extends StatelessWidget {
   final Product product;
+  final VoidCallback onTap;
 
-  const ProductCard({super.key, required this.product});
+  const ProductCard({
+    super.key,
+    required this.product,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () {
-          // Navigate to product details
-        },
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -327,7 +372,7 @@ class ProductCard extends StatelessWidget {
                         CurrencyFormatter.formatCurrency(product.price),
                         style:
                         Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: AppTheme.primaryGreen,
+                          color: AppTheme.primaryBlue,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -345,20 +390,20 @@ class ProductCard extends StatelessWidget {
                   _StatusChip(
                     label: 'Stock: ${product.currentStock} ${product.unit}',
                     color: product.isLowStock
-                        ? AppTheme.warningRed
-                        : AppTheme.secondaryGreen,
+                        ? AppTheme.warningOrange
+                        : AppTheme.secondaryBlue,
                   ),
                   const SizedBox(width: 8),
                   if (product.isExpired)
                     const _StatusChip(
                       label: 'Expired',
-                      color: AppTheme.warningRed,
+                      color: AppTheme.warningOrange,
                     )
                   else if (product.isExpiringSoon)
                     _StatusChip(
                       label: DateFormatter.getDaysUntilExpiry(
                           product.expiryDate),
-                      color: AppTheme.accentOrange,
+                      color: AppTheme.accentLightBlue,
                     ),
                 ],
               ),
