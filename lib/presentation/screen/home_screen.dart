@@ -125,9 +125,9 @@ class DashboardTab extends StatelessWidget {
         backgroundColor:AppTheme.primaryBlue,
         actions: [
           IconButton(
-            icon: Badge(
-              label: const Text('3'),
-              child: const Icon(Icons.notifications_outlined,color: Colors.white,),
+            icon: const Badge(
+              label: Text('3'),
+              child: Icon(Icons.notifications_outlined,color: Colors.white,),
             ),
             onPressed: () {},
           ),
